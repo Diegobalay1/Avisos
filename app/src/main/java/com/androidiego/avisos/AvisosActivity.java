@@ -8,8 +8,11 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
 public class AvisosActivity extends AppCompatActivity {
+    private ListView mListView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -17,6 +20,18 @@ public class AvisosActivity extends AppCompatActivity {
         setContentView(R.layout.activity_avisos);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        mListView = (ListView) findViewById(R.id.avisos_list_view);
+        // The arrayAdapter is the controller in our
+        // model-view-controller relationship. (controller)
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(
+                this,
+                R.layout.avisos_row, //layout (view)
+                R.id.row_text, //row (view)
+                new String[]{"First record", "Second record", "Third record"} // data (model
+        );
+        // establecemos el adaptador al listview, que ya incluye los datos
+        mListView.setAdapter(arrayAdapter);
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
