@@ -1,5 +1,6 @@
 package com.androidiego.avisos;
 
+import android.database.Cursor;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -9,11 +10,13 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 public class AvisosActivity extends AppCompatActivity {
     private ListView mListView;
+    private AvisosDBAdapter mDbAdapter;
+    private AvisosSimpleCursorAdapter mCursorAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,18 +24,52 @@ public class AvisosActivity extends AppCompatActivity {
         setContentView(R.layout.activity_avisos);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
         mListView = (ListView) findViewById(R.id.avisos_list_view);
-        // The arrayAdapter is the controller in our
-        // model-view-controller relationship. (controller)
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(
-                this,
-                R.layout.avisos_row, //layout (view)
-                R.id.row_text, //row (view)
-                new String[]{"First record", "Second record", "Third record"} // data (model
-        );
-        // establecemos el adaptador al listview, que ya incluye los datos
-        mListView.setAdapter(arrayAdapter);
+        findViewById(R.id.avisos_list_view);
+        mListView.setDivider(null);
+        mDbAdapter = new AvisosDBAdapter(this);
+        mDbAdapter.open();
+
+        if (savedInstanceState == null) {
+            // limpiar todos los datos
+            mDbAdapter.deleteAllReminders();
+            // Add algunos datos
+            mDbAdapter.createReminder("Visitar el Centro de Recogida", true);
+            mDbAdapter.createReminder("Enviar los regalos prometidos", false);
+            mDbAdapter.createReminder("Hacer la compra semanal", false);
+            mDbAdapter.createReminder("Comprobar el correo", false);
+        }
+
+        Cursor cursor = mDbAdapter.fetchAllReminders();
+
+        //desde las columnas definidas en la base de datos
+        String[] from = new String[]{
+                AvisosDBAdapter.COL_CONTENT
+        };
+
+        //a la id de views en el layout
+        int[] to = new int[]{
+                R.id.row_text
+        };
+
+        mCursorAdapter = new AvisosSimpleCursorAdapter(
+                //context
+                AvisosActivity.this,
+                //el layout de la fila
+                R.layout.avisos_row,
+                //cursor
+                cursor,
+                //desde columnas definidas en la base de datos
+                from,
+                //a las ids de views en el layout
+                to,
+                //flag - no usado
+                0);
+
+        //el cursorAdapter (controller) está ahora actualizando la listView (view)
+        //con datos desde la base de datos (modelo)
+        mListView.setAdapter(mCursorAdapter);
+
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
