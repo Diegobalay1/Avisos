@@ -1,15 +1,19 @@
 package com.androidiego.avisos;
 
+import android.app.Dialog;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -17,6 +21,7 @@ public class AvisosActivity extends AppCompatActivity {
     private ListView mListView;
     private AvisosDBAdapter mDbAdapter;
     private AvisosSimpleCursorAdapter mCursorAdapter;
+    private int numColumn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +46,7 @@ public class AvisosActivity extends AppCompatActivity {
         }
 
         Cursor cursor = mDbAdapter.fetchAllReminders();
+        numColumn = cursor.getColumnCount();
 
         //desde las columnas definidas en la base de datos
         String[] from = new String[]{
@@ -70,6 +76,8 @@ public class AvisosActivity extends AppCompatActivity {
         //con datos desde la base de datos (modelo)
         mListView.setAdapter(mCursorAdapter);
 
+        Toast.makeText(this, "Numero de Avisos: " + (numColumn+1), Toast.LENGTH_LONG).show();
+
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -79,7 +87,38 @@ public class AvisosActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
-    }
+
+        // cuando pulsamos en un item individual en la listview
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, final int masterListPosition, long id) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(AvisosActivity.this);
+                ListView modeListView = new ListView(AvisosActivity.this);
+                String modes[] = new String[]{ "Editar Aviso", "Borrar Aviso", "Finalizar" };
+                ArrayAdapter<String> modeAdapter = new ArrayAdapter<>(AvisosActivity.this,
+                        android.R.layout.simple_list_item_1, android.R.id.text1, modes);
+                modeListView.setAdapter(modeAdapter);
+                builder.setView(modeListView);
+                final Dialog dialog = builder.create();
+                dialog.show();
+                // editar aviso
+                modeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        if (position == 0) {
+                            Toast.makeText(AvisosActivity.this, "editar " + masterListPosition, Toast.LENGTH_SHORT).show();
+                            // borrar avisos
+                        } else if(position == 1) {
+                            Toast.makeText(AvisosActivity.this, "borrar " + masterListPosition, Toast.LENGTH_SHORT).show();
+                        } else {
+                            // finish();
+                        }
+                        dialog.dismiss();
+                    }
+                });
+            }
+        });
+    }//end onCreate()
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

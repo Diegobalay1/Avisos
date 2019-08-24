@@ -96,16 +96,6 @@ public class AvisosDBAdapter {
         );
     }
 
-    public int getNumReminders() {
-        Cursor mCursor = mDb.query(TABLE_NAME, new String[]{COL_ID, COL_CONTENT, COL_IMPORTANT},
-                null, null, null, null, null);
-        int num = 0;
-        if (mCursor != null) {
-            num = mCursor.getInt(mCursor.getColumnCount());
-            mCursor.moveToFirst();
-        }
-        return num;
-    }
 
     public Cursor fetchAllReminders() {
         Cursor mCursor = mDb.query(TABLE_NAME, new String[]{COL_ID,
