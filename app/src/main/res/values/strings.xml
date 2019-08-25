@@ -3,4 +3,6 @@
     <string name="action_settings">Settings</string>
     <string name="nuevo_aviso">nuevo Aviso</string>
     <string name="salir">salir</string>
+
+    <string name="edit_aviso">Editar Aviso</string>
 </resources>

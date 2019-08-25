@@ -1,7 +1,9 @@
 package com.androidiego.avisos;
 
+import android.annotation.TargetApi;
 import android.app.Dialog;
 import android.database.Cursor;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -9,12 +11,21 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.ActionMode;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class AvisosActivity extends AppCompatActivity {
@@ -23,6 +34,7 @@ public class AvisosActivity extends AppCompatActivity {
     private AvisosSimpleCursorAdapter mCursorAdapter;
     private int numColumn;
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,8 +95,9 @@ public class AvisosActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                Snackbar.make(view, "Nuevo  Aviso añadido", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
+                fireCustomDialog(null);
             }
         });
 
@@ -105,11 +118,17 @@ public class AvisosActivity extends AppCompatActivity {
                 modeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        // editar aviso
                         if (position == 0) {
                             Toast.makeText(AvisosActivity.this, "editar " + masterListPosition, Toast.LENGTH_SHORT).show();
+                            int nId = getIdFromPosition(masterListPosition);
+                            Aviso aviso = mDbAdapter.fetchReminderById(nId);
+                            fireCustomDialog(aviso);
                             // borrar avisos
                         } else if(position == 1) {
                             Toast.makeText(AvisosActivity.this, "borrar " + masterListPosition, Toast.LENGTH_SHORT).show();
+                            mDbAdapter.deleteReminderById(getIdFromPosition(masterListPosition));
+                            mCursorAdapter.changeCursor(mDbAdapter.fetchAllReminders());
                         } else {
                             // finish();
                         }
@@ -118,7 +137,57 @@ public class AvisosActivity extends AppCompatActivity {
                 });
             }
         });
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) { // Es innecesario en nuestro caso, ya que tenemos api mínima de 14 y HONEYCOMB es de 11 :)
+            mListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL); // define el comportamiento de elección para la lista.
+            mListView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
+                @Override
+                public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
+
+                }
+
+                @Override
+                public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                    MenuInflater inflater = mode.getMenuInflater();
+                    inflater.inflate(R.menu.cam_menu, menu);
+                    return true;
+                }
+
+                @Override
+                public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                    return false;
+                }
+
+                @Override
+                public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                    switch (item.getItemId()) {
+                        case R.id.menu_item_delete_aviso:
+                            for (int nC = mCursorAdapter.getCount() -1; nC >= 0; nC--) {
+                                if (mListView.isItemChecked(nC)) {
+                                    mDbAdapter.deleteReminderById(getIdFromPosition(nC));
+                                }
+                            }
+                            mode.finish();
+                            mCursorAdapter.changeCursor(mDbAdapter.fetchAllReminders());
+                            return true;
+                    }
+
+                    return false;
+                }
+
+                @Override
+                public void onDestroyActionMode(ActionMode mode) {
+
+                }
+            });
+        }
+
     }//end onCreate()
+
+    private int getIdFromPosition(int nC) {
+        return (int)mCursorAdapter.getItemId(nC);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -126,6 +195,61 @@ public class AvisosActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.menu_avisos, menu);
         return true;
     }
+
+    /**
+     * Metodo usado tanto para editar como para crear|insertar Avisos
+     * @param aviso
+     */
+    private void fireCustomDialog(final Aviso aviso) {
+        // custom dialog
+        final Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);//Crea una caja de diálogo sin título, ya que lo tenemos en el nuestro propio
+        dialog.setContentView(R.layout.dialog_custom);//inyectamos diseño personalizado que hemos creado
+
+        TextView titleView = (TextView)dialog.findViewById(R.id.custom_title);
+        final EditText editCustom = (EditText)dialog.findViewById(R.id.custom_edit_reminder);
+        Button commitButton = (Button)dialog.findViewById(R.id.custom_button_commit);
+        final CheckBox checkBox = (CheckBox)dialog.findViewById(R.id.custom_check_box);
+        LinearLayout rootLayout = (LinearLayout)dialog.findViewById(R.id.custom_root_layout);
+        final boolean isEditOperation = (aviso != null);
+
+        // esto es para un edit
+        if (isEditOperation) {
+            titleView.setText(getString(R.string.edit_aviso));
+            checkBox.setChecked(aviso.getId() == 1);
+            editCustom.setText(aviso.getContent());
+            rootLayout.setBackgroundColor(getResources().getColor(R.color.azul_neutro));
+        }
+
+        commitButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String reminderText = editCustom.getText().toString();
+                // para actualizar | editar aviso
+                if (isEditOperation) {
+                    Aviso reminderEdited = new Aviso(aviso.getId(),
+                            reminderText, checkBox.isChecked() ? 1 : 0);
+                    mDbAdapter.updateReminder(reminderEdited);
+                 // esto es para un nuevo aviso
+                } else {
+                    mDbAdapter.createReminder(reminderText, checkBox.isChecked());
+                }
+                mCursorAdapter.changeCursor(mDbAdapter.fetchAllReminders());
+                dialog.dismiss();
+            }
+        });
+
+        Button buttonCancel = (Button)dialog.findViewById(R.id.custom_button_cancel);
+        buttonCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+
+        dialog.show();
+    }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -137,7 +261,8 @@ public class AvisosActivity extends AppCompatActivity {
         switch (id) {
             case R.id.action_nuevo:
                 // crear nuevo aviso
-                Log.d(getLocalClassName(), "crear nuevo Aviso");
+                    //Log.d(getLocalClassName(), "crear nuevo Aviso");
+                fireCustomDialog(null);
                 return true;
             case R.id.action_salir:
                 finish();
