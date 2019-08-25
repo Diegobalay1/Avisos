@@ -5,4 +5,7 @@
     <string name="salir">salir</string>
 
     <string name="edit_aviso">Editar Aviso</string>
+    <string name="borrar_aviso_titulo">Borrar Aviso?</string>
+    <string name="ok">OK</string>
+    <string name="no">NO</string>
 </resources>

@@ -1,7 +1,9 @@
 package com.androidiego.avisos;
 
 import android.annotation.TargetApi;
+import android.app.ActionBar;
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
@@ -39,15 +41,19 @@ public class AvisosActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_avisos);
+
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        toolbar.setLogo(R.mipmap.ic_launcher);
+
         mListView = (ListView) findViewById(R.id.avisos_list_view);
         findViewById(R.id.avisos_list_view);
         mListView.setDivider(null);
         mDbAdapter = new AvisosDBAdapter(this);
         mDbAdapter.open();
 
-        if (savedInstanceState == null) {
+        /*if (savedInstanceState == null) {
             // limpiar todos los datos
             mDbAdapter.deleteAllReminders();
             // Add algunos datos
@@ -55,10 +61,10 @@ public class AvisosActivity extends AppCompatActivity {
             mDbAdapter.createReminder("Enviar los regalos prometidos", false);
             mDbAdapter.createReminder("Hacer la compra semanal", false);
             mDbAdapter.createReminder("Comprobar el correo", false);
-        }
+        }*/
 
         Cursor cursor = mDbAdapter.fetchAllReminders();
-        numColumn = cursor.getColumnCount();
+        //numColumn = cursor.getColumnCount();
 
         //desde las columnas definidas en la base de datos
         String[] from = new String[]{
@@ -88,15 +94,15 @@ public class AvisosActivity extends AppCompatActivity {
         //con datos desde la base de datos (modelo)
         mListView.setAdapter(mCursorAdapter);
 
-        Toast.makeText(this, "Numero de Avisos: " + (numColumn+1), Toast.LENGTH_LONG).show();
+        //Toast.makeText(this, "Numero de Avisos: " + (numColumn+1), Toast.LENGTH_LONG).show();
 
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Nuevo  Aviso añadido", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                /*Snackbar.make(view, "Nuevo  Aviso añadido", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();*/
                 fireCustomDialog(null);
             }
         });
@@ -126,9 +132,24 @@ public class AvisosActivity extends AppCompatActivity {
                             fireCustomDialog(aviso);
                             // borrar avisos
                         } else if(position == 1) {
-                            Toast.makeText(AvisosActivity.this, "borrar " + masterListPosition, Toast.LENGTH_SHORT).show();
-                            mDbAdapter.deleteReminderById(getIdFromPosition(masterListPosition));
-                            mCursorAdapter.changeCursor(mDbAdapter.fetchAllReminders());
+
+                            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(AvisosActivity.this);
+                            alertBuilder.setMessage(R.string.borrar_aviso_titulo)
+                                    .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            mDbAdapter.deleteReminderById(getIdFromPosition(masterListPosition));
+                                            mCursorAdapter.changeCursor(mDbAdapter.fetchAllReminders());
+                                            dialog.dismiss();
+                                        }
+                                    })
+                                    .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            dialog.dismiss();
+                                        }
+                                    }).show();
+
                         } else {
                             // finish();
                         }
